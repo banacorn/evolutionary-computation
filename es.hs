@@ -1,5 +1,5 @@
 
-module ES where
+module Main where
 
 import Control.Monad (forever, replicateM, replicateM_)
 --import Data.List (intercalate)
@@ -129,3 +129,5 @@ allU = do
     runU 1 False
     runU 0.1 False
     runU 0.01 False
+
+main = allU
