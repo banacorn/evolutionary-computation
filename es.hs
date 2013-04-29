@@ -1,7 +1,7 @@
 
 module ES where
 
-import Control.Monad (forever, replicateM)
+import Control.Monad (forever, replicateM, replicateM_)
 --import Data.List (intercalate)
 import qualified Control.Monad.Primitive as Prim
 import qualified System.Random.MWC as MWC
@@ -91,3 +91,19 @@ go sigma threshold times elitism = do
     run 0 (test, gen) threshold times elitism
     where   test = Fixed (replicate 10 1) sigma
 
+fucket = do
+    replicateM_ 10 (go 0.1 0.005 10000000 True)
+    replicateM_ 10 (go 0.01 0.005 10000000 True)
+
+fuck1t = do
+    replicateM_ 10 (go 1 0.005 10000000 True)
+
+
+fucke01f = do
+    replicateM_ 10 (go 0.1 0.005 10000000 False)
+fucke001f = do
+    replicateM_ 10 (go 0.01 0.005 10000000 False)
+
+
+fuck1f = do
+    replicateM_ 10 (go 1 0.005 10000000 False)
