@@ -7,6 +7,7 @@ import qualified Control.Monad.Primitive as Prim
 import qualified System.Random.MWC as MWC
 import System.Random.MWC.Distributions (normal)
 import Data.Vector (singleton)
+import GHC.Word (Word32)
 
 type Variable = Double
 type Variance = Double
@@ -83,8 +84,10 @@ run n (x, gen) threshold times elitism
 
 get (Fixed v _) = v
 
-go sigma threshold times elitism= do
-    gen <- MWC.initialize (singleton 40)
+go sigma threshold times elitism = do
+    --a <- MWC.withSystemRandom id
+    a <- (MWC.withSystemRandom . MWC.asGenIO $ \gen -> MWC.uniform gen) :: IO Word32
+    gen <- MWC.initialize (singleton a)
     run 0 (test, gen) threshold times elitism
     where   test = Fixed (replicate 10 1) sigma
 
