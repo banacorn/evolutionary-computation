@@ -26,9 +26,8 @@ type Seed = MWC.Seed
 type Gen = MWC.Gen (Prim.PrimState IO)
 
 
-tau = 1
+tau = 0.7071
 boundary = 0.005
-
 
 
 decode :: Genotype -> Pheonotype
@@ -56,11 +55,16 @@ mutate (Fixed variables sigma, gen) = do
     let variables' = zipWith (\x v -> x + sigma * v) variables variances
 
     return (Fixed variables' sigma, gen)
---mutate (Uncorrelated variables sigmas, gen) = do
 
---    n0 <- normal 0 1 gen
---    let sigma' = max boundary (sigma * exp (tau * n0))
+mutate (Uncorrelated variables sigmas, gen) = do
 
+    shared <- normal 0 1 gen
+    norms <- replicateM (length variables) (normal 0 1 gen)
+    let sigmas' = zipWith (\original norm -> max boundary (original * exp (tau * shared + tau * norm))) sigmas norms
+
+    let variables' = zipWith3 (\x sigma norm-> x + sigma * norm) variables sigmas' norms
+
+    return (Uncorrelated variables' sigmas', gen)
 
 -- (1 + 1)-ES
 generate (father, gen) = do
@@ -85,25 +89,43 @@ run n (x, gen) threshold times elitism
 get (Fixed v _) = v
 
 go sigma threshold times elitism = do
-    --a <- MWC.withSystemRandom id
     a <- (MWC.withSystemRandom . MWC.asGenIO $ \gen -> MWC.uniform gen) :: IO Word32
     gen <- MWC.initialize (singleton a)
     run 0 (test, gen) threshold times elitism
     where   test = Fixed (replicate 10 1) sigma
 
-fucket = do
-    replicateM_ 10 (go 0.1 0.005 10000000 True)
-    replicateM_ 10 (go 0.01 0.005 10000000 True)
+go' sigma threshold times elitism = do
+    a <- (MWC.withSystemRandom . MWC.asGenIO $ \gen -> MWC.uniform gen) :: IO Word32
+    gen <- MWC.initialize (singleton a)
+    run 0 (uncorrelated, gen) threshold times elitism
+    where uncorrelated = Uncorrelated (replicate 10 1) (replicate 10 sigma)
 
-fuck1t = do
-    replicateM_ 10 (go 1 0.005 10000000 True)
+runF s True = do
+    print $ "(1+1)-ES fixed" ++ show s
+    replicateM_ 10 (go s 0.005 10000000 True)
+runF s False = do
+    print $ "(1,1)-ES fixed" ++ show s
+    replicateM_ 10 (go s 0.005 10000000 False)
 
+allF = do
+    runF 1 True
+    runF 0.1 True
+    runF 0.01 True
+    runF 1 False
+    runF 0.1 False
+    runF 0.01 False
 
-fucke01f = do
-    replicateM_ 10 (go 0.1 0.005 10000000 False)
-fucke001f = do
-    replicateM_ 10 (go 0.01 0.005 10000000 False)
+runU s True = do
+    print $ "(1+1)-ES uncorrelated" ++ show s
+    replicateM_ 10 (go' s 0.005 10000000 True)
+runU s False = do
+    print $ "(1,1)-ES uncorrelated" ++ show s
+    replicateM_ 10 (go' s 0.005 10000000 False)
 
-
-fuck1f = do
-    replicateM_ 10 (go 1 0.005 10000000 False)
+allU = do
+    runU 1 True
+    runU 0.1 True
+    runU 0.01 True
+    runU 1 False
+    runU 0.1 False
+    runU 0.01 False
