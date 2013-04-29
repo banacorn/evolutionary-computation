@@ -17,7 +17,7 @@ data Genotype   = Fixed [Variable] Variance
 data Pheonotype = Sphere [Double] deriving (Show, Eq)
 
 instance Ord Pheonotype where
-    compare a b = compare (fitness a) (fitness b)
+    compare a b = compare (evaluate a) (evaluate b)
 instance Ord Genotype where
     compare a b = compare (decode a) (decode b)
 
@@ -30,40 +30,23 @@ boundary = 0.005
 
 
 
---data State = State {
---    getSeed            :: Seed,
---    --getDeviation       :: Double,
---    getTau             :: Double,
---    getBoundary        :: Double
---} deriving (Show, Eq)
-
---restoreGen :: State -> IO Gen
---restoreGen state = MWC.restore (getSeed state)
-
---saveGen :: State -> Gen -> IO State
---saveGen state gen = do
---    seed' <- MWC.save gen
---    return $ State {
---        getSeed = seed',
---        --getDeviation = getDeviation state,
---        getTau = getTau state,
---        getBoundary = getBoundary state
---    }
-
-
 decode :: Genotype -> Pheonotype
 decode (Fixed variables _) = Sphere variables
 decode (Uncorrelated variables _) = Sphere variables
 decode (Correlated variables _ _) = Sphere variables
 
-fitness :: Pheonotype -> Double
-fitness (Sphere sphere) = sum . map square $ sphere
+evaluate :: Pheonotype -> Double
+evaluate (Sphere sphere) = sum . map square $ sphere
     where   square x = x * x 
 
-mutate :: Genotype -> Gen -> IO (Genotype, Gen)
-mutate (Fixed variables sigma) gen = do
 
-    -- normal distribution for step size
+evaluateG :: Genotype -> Double
+evaluateG = evaluate . decode
+
+
+mutate :: (Genotype, Gen) -> IO (Genotype, Gen)
+mutate (Fixed variables sigma, gen) = do
+
     --n0 <- normal 0 1 gen
     --let sigma' = max boundary (sigma * exp (tau * n0))
 
@@ -72,66 +55,36 @@ mutate (Fixed variables sigma) gen = do
     let variables' = zipWith (\x v -> x + sigma * v) variables variances
 
     return (Fixed variables' sigma, gen)
+--mutate (Uncorrelated variables sigmas, gen) = do
 
-run threshold stop n f x
-    | stop <= n = do
-        print n
+--    n0 <- normal 0 1 gen
+--    let sigma' = max boundary (sigma * exp (tau * n0))
+
+
+-- (1 + 1)-ES
+generate (father, gen) = do
+    (child, gen') <- mutate (father, gen)
+    return (min father child, gen')    
+
+-- (1, 1)-ES
+generate' = mutate 
+
+run n (x, gen) threshold times elitism
+    | times <= n = print n
     | otherwise = do
-        if g <= threshold then do
-            print $ "********** " ++ show n ++ "  - " ++ (show g)
+        if evaluateG x <= threshold then do
+            print $ "********** " ++ show n ++ "  - " ++ (show $ evaluateG x)
         else do
-            x' <- f x
-            print $ "generation " ++ show n ++ "  - " ++ (show g)
-            run threshold stop (succ n) f x'
-        where   
-                g = fitness $ decode x
+            (x', gen') <- if elitism then generate (x, gen) else generate' (x, gen)
+            --print $ "generation " ++ show n ++ "  - " ++ (show $ evaluateG x)
+            run (succ n) (x', gen') threshold times elitism
 
 
-run' threshold stop n f x
-    | stop <= n = do
-        print n
-    | otherwise = do
-        if g < threshold then do
-            print $ "********** " ++ show (succ n) ++ "  - " ++ (show g)
-        else do
-            x' <- f x
-            gen' <- extractGen x'
-            print $ "generation " ++ show (succ n) ++ "  - " ++ (show . fitness' $ min x x') ++ "  " ++ show (get x) ++ show (get x')
-            x'' <- injectGen x gen'
-            run' threshold stop (succ n) f (min x'' x')
-        where   fitness' = fitness . decode
-                g = fitness' x
-                extractGen (Fixed _ _ state) = restoreGen state
-                injectGen (Fixed v s state) gen = do
-                    state' <- saveGen state gen
-                    return $ Fixed v s state'
 
+get (Fixed v _) = v
 
-unicorn = State {
-    getSeed = MWC.toSeed (singleton 42),
-    getTau = 1,
-    getBoundary = 0.005
-}
-
-test = Fixed (replicate 1 1) 0.01 unicorn
-get (Fixed v _ _) = v
-
-go = do
+go sigma threshold times elitism= do
     gen <- MWC.initialize (singleton 40)
-    n <- replicateM 10 $ normal 0 1 gen
-    print n
+    run 0 (test, gen) threshold times elitism
+    where   test = Fixed (replicate 10 1) sigma
 
-
-
-
-----seed :: a -> IO Seed
---seed n = MWC.initialize (V.singleton n) >>= MWC.save
-
---gauss' :: Seed -> IO (Seed, Double)
---gauss' seed = do
---    gen <- MWC.restore seed
---    arr <- MWC.uniformVector gen times
---    let n = (V.sum arr) / 20.0
---    seed' <- MWC.save gen
---    return (seed', n)
---    where   times = 20
