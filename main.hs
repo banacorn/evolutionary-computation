@@ -68,7 +68,7 @@ instance Ord Individual where
 
 unicorn = Race [] Config {
     representationLength = 50,
-    population = 200,
+    population = 50,
     seed = MWC.toSeed (V.singleton 42),
     best = []
 }
@@ -88,14 +88,14 @@ iterateM n c f = iterateM (n - 1) c f >>= f
 
 fuck f = do
     u <- initialize unicorn >>= initializeGen
-    Race _ config <- iterateM 100 (return u) (\s -> f s >>= crossover >>= evaluate >>= addRecord)
+    Race _ config <- iterateM 300 (return u) (\s -> f s >>= crossover >>= evaluate >>= addRecord)
     print . reverse . best $ config
     --print . map (flip (-) 1000) . reverse . best $ config
     --print . intercalate ", " . map (\(i, a) -> "[" ++ show i ++ ", " ++ show a ++ "]") . zip [0 ..] . reverse . best $ config
     return ()
 
 
-main = replicateM_ 10 (fuck rouletteWheel)
+main = replicateM_ 40 (fuck rouletteWheel)
 
 chromosomeToIndividual :: Chromosome -> Individual
 chromosomeToIndividual chromosome = Individual chromosome $ evaluateC chromosome
