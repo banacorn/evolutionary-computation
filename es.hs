@@ -64,7 +64,7 @@ mutate (EinFuenftel variables sigma (success, total), gen) = do
     variances <- replicateM (length variables) (normal 0 1 gen)
     let variables' = zipWith (\x v -> x + sigma' * v) variables variances
 
-    return (Fixed variables' sigma', gen)
+    return (EinFuenftel variables' sigma' (success, total), gen)
     where   changeSigma sigma successRate
                 | successRate > 0.2 = sigma / a
                 | successRate < 0.2 = sigma * a
