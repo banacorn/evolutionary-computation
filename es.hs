@@ -12,9 +12,11 @@ import GHC.Word (Word32)
 type Variable = Double
 type Variance = Double
 type Covariance = Double
+type Total = Int
+type Success = Int
 data Genotype   = Fixed [Variable] Variance
                 | Uncorrelated [Variable] [Variance]
-                | Correlated [Variable] [Variance] [Covariance] deriving (Show, Eq)
+                | EinFuenftel [Variable] Variance Success Total deriving (Show, Eq)
 data Pheonotype = Sphere [Double] deriving (Show, Eq)
 
 instance Ord Pheonotype where
@@ -33,7 +35,7 @@ boundary = 0.005
 decode :: Genotype -> Pheonotype
 decode (Fixed variables _) = Sphere variables
 decode (Uncorrelated variables _) = Sphere variables
-decode (Correlated variables _ _) = Sphere variables
+decode (EinFuenftel variables _ _ _) = Sphere variables
 
 evaluate :: Pheonotype -> Double
 evaluate (Sphere sphere) = sum . map square $ sphere
@@ -47,10 +49,7 @@ evaluateG = evaluate . decode
 mutate :: (Genotype, Gen) -> IO (Genotype, Gen)
 mutate (Fixed variables sigma, gen) = do
 
-    --n0 <- normal 0 1 gen
-    --let sigma' = max boundary (sigma * exp (tau * n0))
-
-    -- x' = x + d x N(0, 1)
+    -- x' = x + S x N(0, 1)
     variances <- replicateM (length variables) (normal 0 1 gen)
     let variables' = zipWith (\x v -> x + sigma * v) variables variances
 
@@ -61,10 +60,13 @@ mutate (Uncorrelated variables sigmas, gen) = do
     shared <- normal 0 1 gen
     norms <- replicateM (length variables) (normal 0 1 gen)
     let sigmas' = zipWith (\original norm -> max boundary (original * exp (tau * shared + tau * norm))) sigmas norms
-
+    
+    -- x' = x + Si x Ni(0, 1)
     let variables' = zipWith3 (\x sigma norm-> x + sigma * norm) variables sigmas' norms
 
     return (Uncorrelated variables' sigmas', gen)
+
+
 
 -- (1 + 1)-ES
 generate (father, gen) = do
@@ -101,10 +103,10 @@ go' sigma threshold times elitism = do
     where uncorrelated = Uncorrelated (replicate 10 1) (replicate 10 sigma)
 
 runF s True = do
-    print $ "(1+1)-ES fixed" ++ show s
+    print $ "(1+1)-ES fixed  " ++ show s
     replicateM_ 10 (go s 0.005 10000000 True)
 runF s False = do
-    print $ "(1,1)-ES fixed" ++ show s
+    print $ "(1,1)-ES fixed  " ++ show s
     replicateM_ 10 (go s 0.005 10000000 False)
 
 allF = do
@@ -116,10 +118,10 @@ allF = do
     runF 0.01 False
 
 runU s True = do
-    print $ "(1+1)-ES uncorrelated" ++ show s
+    print $ "(1+1)-ES uncorrelated  " ++ show s
     replicateM_ 10 (go' s 0.005 10000000 True)
 runU s False = do
-    print $ "(1,1)-ES uncorrelated" ++ show s
+    print $ "(1,1)-ES uncorrelated  " ++ show s
     replicateM_ 10 (go' s 0.005 10000000 False)
 
 allU = do
