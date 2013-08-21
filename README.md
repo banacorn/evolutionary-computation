@@ -1,4 +1,1 @@
-GA
-==
-
-some genetic algorithm stuffs
+Bacon
