@@ -1,31 +1,32 @@
  {-# LANGUAGE MultiParamTypeClasses #-}
  {-# LANGUAGE FunctionalDependencies #-}
 
-module GA where
+module EC.GA where
 
-import Control.Monad (forever, replicateM)
-import Data.List (intercalate)
+--import Control.Monad (forever, replicateM)
+--import Data.List (intercalate)
 
 import qualified System.Random.MWC as MWC
 import qualified Control.Monad.Primitive as Prim
-import qualified Data.Vector as V
+--import qualified Data.Vector as V
 
-type Seed = MWC.Seed
-type Gen = MWC.Gen (Prim.PrimState IO)
 
-class Phenotype p where
-    evaluate :: p -> Int
+--type Seed = MWC.Seed
+--type Gen = MWC.Gen (Prim.PrimState IO)
 
-class Gene n where
-    mutate :: Gen -> Float -> n -> IO n
+class Phenotype p
+
+class Gene n
+    --mutate :: Gen -> Float -> n -> IO n
 
 class (Functor f, Gene n) => Genotype f n | n -> f where
-    crossover :: Gen -> (f g, f g) -> IO (f g, f g)
-    initialize :: Gen -> IO (f n)
+--    crossover :: Gen -> (f g, f g) -> IO (f g, f g)
+--    initialize :: Gen -> IO (f n)
 
-class (Genotype f genotype, Phenotype phenotype) => Representation f genotype phenotype | phenotype -> f genotype, f genotype -> phenotype where
-    encode :: phenotype -> f genotype
-    decode :: f genotype -> phenotype
+class (Genotype f genotype, Phenotype phenotype) => 
+    Representation f genotype phenotype | phenotype -> f genotype, f genotype -> phenotype
+--    encode :: phenotype -> f genotype
+--    decode :: f genotype -> phenotype
 
 --data Individual g = Individual g Int
 
@@ -158,15 +159,15 @@ class (Genotype f genotype, Phenotype phenotype) => Representation f genotype ph
 --newtype BoolString = BoolString [Bool]
 
 
-instance Gene Bool where
-    mutate gen prob b = do
-        n <- MWC.uniform gen :: IO Float
-        case n > prob of
-            True -> return b 
-            False -> return $ not b
+--instance Gene Bool where
+--    mutate gen prob b = do
+--        n <- MWC.uniform gen :: IO Float
+--        case n > prob of
+--            True -> return b 
+--            False -> return $ not b
 
-instance Genotype [] Bool where
-    initialize gen = fmap V.toList (MWC.uniformVector gen 100 :: IO (V.Vector Bool))
+--instance Genotype [] Bool where
+--    initialize gen = fmap V.toList (MWC.uniformVector gen 100 :: IO (V.Vector Bool))
     --initialize gen = fmap (BoolString . map even . V.toList) (MWC.uniformVector gen 100 :: IO (V.Vector Int))
     --mutate gen prob boolString = return boolString
     --mutate gen prob (BoolString list) = do

@@ -18,4 +18,4 @@ cabal-version:       >=1.8
 library
   exposed-modules:  EC
   -- other-modules:       
-  build-depends:       base ==4.6.*, mwc-random ==0.12.*, primitive ==0.5.*
+  build-depends:       base ==4.6.*, mwc-random ==0.12.*, primitive ==0.5.*, mtl ==2.1.*
